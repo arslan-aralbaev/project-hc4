@@ -219,7 +219,7 @@ class Mob:
         screen.blit(self.character, (self.x, self.y))
 
 
-mud = Mob(xsc, ysc, 1, 'monster', 'image/pack 1/rl_ran.png', 'image/pack 1/rl_sty.png', 'image/pack 1/sleep_up.png',
+ghost_yarik = Mob(xsc, ysc, 1, 'monster', 'image/pack 1/rl_ran.png', 'image/pack 1/rl_sty.png', 'image/pack 1/sleep_up.png',
           'image/pack 1/sleep_down.png', 'image/pack 1/up_side.png', 'image/pack 1/down_side.png')
 
 
@@ -369,7 +369,7 @@ while True:
         else:
             speed = 3
 
-        mud.live()
+        ghost_yarik.live()
         if user_visible:
             screen.blit(user, (x, y))
         w.draw()

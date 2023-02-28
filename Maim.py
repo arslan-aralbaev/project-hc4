@@ -5,12 +5,11 @@ from random import randint as ri
 
 pygame.init()
 screen = pygame.display.set_mode()
-# coordinates and numbers
 global_time = (0, 0)
 xsc, ysc = screen.get_size()
 x = 160
 y = 190
-xlak, ylak = xsc, ysc
+x_ghost, y_ghost = xsc, ysc
 q_last, w_last = x, y
 razmetka_y = ysc // 8
 gran = xsc // 6  # для отрисовки меню
@@ -26,10 +25,9 @@ debugText = ''
 debugPoint = 1
 lifeTarget = 'monster'
 death_const = False
-# filesystem
+keys_color = ['red', 'green', 'yellow', 'blue', 'fantom']
 file = open('source/level_1.lvl', mode='r')
 
-# images
 st_sc = pygame.image.load('image/fogs.png')
 st_sc = pygame.transform.scale(st_sc, (xsc, ysc))
 blop = pygame.transform.scale(pygame.image.load('image/menu.png'), (gran, xsc))
@@ -40,7 +38,6 @@ xlogo = 0
 wlayer, hayeler = 40, 67
 users_puls = 72
 stsc = True
-# image init
 bottle_png = py.transform.scale(py.image.load('image/bottle.png'), (11, 11 * 3))
 pls_use_hd = py.image.load('image/please.jpg')
 pls_use_hd = py.transform.scale(pls_use_hd, (wpls, wpls // 1.7))
@@ -90,7 +87,7 @@ class Hidden_box:
         self.height = side
 
     def draw(self):
-        global keys, user_visible, mud, lifeTarget
+        global keys, user_visible, ghost_yarik, lifeTarget
         if (self.x_start, self.y_start, self.x_start + self.width, self.y_start + self.height) in boxes_point:
             screen.blit(box, (self.x_start, self.y_start))
             if keys[pygame.K_e] and any(points_check(x, y, boxes_point)):
@@ -103,16 +100,18 @@ class Hidden_box:
 
 
 class Key:
-    def __init__(self):
+    def __init__(self, score):
         if x > 10 and y > 10:
             self.x = random.randint(10, x - 30)
             self.y = random.randint(10, y - 30)
+            self.score = score
+            self.color = random.choice(keys_color)
+            keys_color.pop(keys_color.index(self.color))
 
     def draw(self):
-        global bottle_score
         if x <= self.x <= x + 40 and \
                 y <= self.y <= y + 67:
-            bottle_score += 1
+            self.score += 1
             py.time.delay(10)
             self.x = self.y = xsc + ysc
             print('bottle')
@@ -135,9 +134,9 @@ def debugInfo(msg):
     py.draw.line(screen, (255, 0, 0), (x + wlayer / 2, 0), (x + wlayer / 2, ysc), 1)
     py.draw.rect(screen, (147, 2, 255), (x, y, wlayer, hayeler), 2)
     # ghost possition
-    py.draw.line(screen, (255, 0, 0), (0, ylak + hayeler / 2), (xsc, ylak + hayeler / 2), 1)
-    py.draw.line(screen, (255, 0, 0), (xlak + wlayer / 2, 0), (xlak + wlayer / 2, ysc), 1)
-    py.draw.rect(screen, (147, 2, 255), (xlak, ylak, wlayer, hayeler), 2)
+    py.draw.line(screen, (255, 0, 0), (0, y_ghost + hayeler / 2), (xsc, y_ghost + hayeler / 2), 1)
+    py.draw.line(screen, (255, 0, 0), (x_ghost + wlayer / 2, 0), (x_ghost + wlayer / 2, ysc), 1)
+    py.draw.rect(screen, (147, 2, 255), (x_ghost, y_ghost, wlayer, hayeler), 2)
     text = font.render(debugText, True, (232, 150, 40))
     debugSurf.blit(text, (10, 10))
     screen.blit(debugSurf, (5, 5))
@@ -157,7 +156,7 @@ class Pause:
         self.x_window = (x // 2) - 100
         self.y_window = -100
 
-    def open(self, keys):
+    def open(self, key):
         while True:
             if pygame.key.get_pressed()[pygame.K_ESCAPE]:
                 break
@@ -174,18 +173,15 @@ class Pause:
 
 
 class Mob:
-    def __init__(self, x_pik, y_pik, speed_up, target, side_move, side_stay, sleep_down, sleep_up, up_s, down_s):
+    def __init__(self, x_pik, y_pik, speed_up, target, side_up, side_down, side_crash):
         self.x = x_pik
         self.y = y_pik
         self.y_speed = speed_up
         self.x_speed = speed_up
         self.target = target
-        self.up = py.image.load(up_s)
-        self.down = py.image.load(down_s)
-        self.side_move = py.image.load(side_move)
-        self.side_stay = py.image.load(side_stay)
-        self.sleep_down = py.image.load(sleep_down)
-        self.sleep_up = py.image.load(sleep_up)
+        self.gluk = py.image.load(side_crash)
+        self.side_move = py.image.load(side_up)
+        self.side_stay = py.image.load(side_down)
         self.targetx = ri(10, xsc)
         self.targety = ri(10, ysc)
         self.relax = 0
@@ -194,15 +190,14 @@ class Mob:
         self.tws = self.side_move
         self.character = self.tws
 
-    def live(self, Target):
-        global x, y, xlak, ylak, lifeTarget
+    def live(self, target):
+        global x, y, x_ghost, y_ghost, lifeTarget
         self.target = lifeTarget
-        # print(self.target)
-        xlak, ylak = self.x, self.y
+        x_ghost, y_ghost = self.x, self.y
         if self.target == 'monster':
             self.targetx, self.targety = x, y
-            if sum(points_check(self.x, self.y, [(x, y, x + wlayer, y + hayeler)])):
-                exit()
+            if sum(points_check(self.x, self.y, [(x, y, x + wlayer, y + hayeler)])) and user_visible:
+                exit()  # scrimer on another die animation 'dr1'
         if self.targetx - 5 <= self.x <= self.targetx + 5 and \
                 self.targety - 5 <= self.y <= self.targety + 5 and self.target == 'walker':
             if self.flag:
@@ -212,19 +207,15 @@ class Mob:
                 self.targetx = ri(10, xsc)
                 self.targety = ri(10, ysc)
                 self.flag = True
-            self.frst, self.tws = self.sleep_up, self.sleep_down
+            self.frst, self.tws = self.side_stay, self.side_stay
         if int(global_time[1]) % 2 == 0:
             self.character = self.frst
         else:
             self.character = self.tws
         if self.targety > self.y:
             self.y_speed = 1
-            self.frst = self.down
-            self.tws = py.transform.flip(self.down, True, False)
         else:
             self.y_speed = -1
-            self.frst = self.up
-            self.tws = py.transform.flip(self.up, True, False)
         if self.targetx > self.x:
             self.x_speed = 1
             self.frst = py.transform.flip(self.side_stay, True, False)
@@ -235,10 +226,6 @@ class Mob:
         self.x += self.x_speed
         self.y += self.y_speed
         screen.blit(self.character, (self.x, self.y))
-
-
-mud = Mob(xlak, ylak, 1, 'monster', 'image/pack 1/rl_ran.png', 'image/pack 1/rl_sty.png', 'image/pack 1/sleep_up.png',
-          'image/pack 1/sleep_down.png', 'image/pack 1/up_side.png', 'image/pack 1/down_side.png')
 
 
 def start_screen():
@@ -283,7 +270,6 @@ def start_screen():
 
 
 def points_check(x_now, y_now, df_point):
-    total = 0
     side = [False, False, False, False]  # AB BC CD DA
     if df_point:
         for point in df_point:
@@ -336,13 +322,14 @@ class Sound:
         self.line = xsc // 2
         self.volume = 0.0
 
-    def listen(self):
+    def listen(self, move_flag=False, base=(0, 0)):
         global x, y
+        self.x_start, self.y_start = base[0], base[1] if move_flag else 0
         self.volume = 1 - self.distance / self.line if self.distance <= self.line else 0
         py.mixer.music.set_volume(self.volume)
         self.center = (self.x_start, self.y_start)
         self.distance = int(((self.center[0] - x) ** 2 + (self.center[1] - y) ** 2) ** 0.5)
-        py.draw.rect(screen, self.clr, (self.x_start, self.y_start, self.width, self.height))
+        py.draw.rect(screen, self.clr, (self.x_start, self.y_start, self.width, self.height), 0)
 
 
 def import_somefile():
@@ -353,14 +340,17 @@ def import_somefile():
         walls_array.append(Wall((int(eval(sp[0])), int(eval(sp[1]))), (int(eval(sp[2])), int(eval(sp[3]))), sp[4]))
 
 
-bX = Hidden_box((xsc // 4, ysc // 4))
-siu = Sound((x // 2, y // 2), (x // 2 + 30, y // 2 + 30))
+ghost_yarik = Mob(x_ghost, y_ghost, 1, 'monster', 'image/pack 1/rl_ran.png', 'image/pack 1/rl_sty.png',
+                  'image/pack 1/rl_sty.png')
+yarik_voice = Sound((x // 2, y // 2), (x // 2 + 30, y // 2 + 30))
+box_for_hide_1 = Hidden_box((xsc // 4, ysc // 4))
+radio_box = Sound((x // 2, y // 2), (x // 2 + 30, y // 2 + 30))
 py.mouse.set_visible(True)
 pygame.mixer.music.load("sounds/choice.mp3")
 pause = Pause()
 # clock = py.time.Clock()
 while True:
-    '''stsc = True
+    stsc = True
     while stsc:
         for i in pygame.event.get():
             if i.type == pygame.QUIT:
@@ -375,7 +365,7 @@ while True:
     py.mixer.music.play(-1)
     py.time.delay(5000)
     py.mixer.music.load('sounds/kaplya.mp3')
-    py.mixer.music.play(-1)'''
+    py.mixer.music.play(-1)
     speed = 3
     tick = 0
     py.mixer.music.load('sounds/shum.mp3')
@@ -425,15 +415,15 @@ while True:
         else:
             speed = 3
 
-        mud.live('monster')
-        bX.draw()
+        ghost_yarik.live('monster')
+        box_for_hide_1.draw()
         if user_visible:
             screen.blit(user, (x, y))
         [wall.draw() for wall in walls_array]
-        siu.listen()
-        screen.blit(fogs, (-x, -y))
-        screen.blit(darkness, (-xsc + x + 20, -ysc + y + 43))
+        radio_box.listen()
+        # screen.blit(fogs, (-x, -y))
+        # screen.blit(darkness, (-xsc + x + 20, -ysc + y + 43))
         if debugPoint % 2 == 0:
             debugInfo(str(x) + str(y) + str(points_check(x, y, walls_point)))
         pygame.display.update()
-        clock.tick(60)
+        clock.tick(30)
