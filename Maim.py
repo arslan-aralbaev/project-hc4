@@ -21,11 +21,12 @@ font = pygame.font.SysFont('arial', 15)
 walls_point = list()
 boxes_point = list()
 walls_array = list()
+keys_point = list()
 debugText = ''
 debugPoint = 1
 lifeTarget = 'monster'
 death_const = False
-keys_color = ['red', 'green', 'yellow', 'blue', 'fantom']
+keys_color = [['red', (255, 0, 0)], ['green', (0, 255, 0)], ['yellow', (255, 255, 0)], ['blue', (0, 0, 255)], ['fantom', (0, 255, 255)]]
 file = open('source/level_1.lvl', mode='r')
 
 st_sc = pygame.image.load('image/fogs.png')
@@ -90,7 +91,7 @@ class Hidden_box:
         global keys, user_visible, ghost_yarik, lifeTarget
         if (self.x_start, self.y_start, self.x_start + self.width, self.y_start + self.height) in boxes_point:
             screen.blit(box, (self.x_start, self.y_start))
-            if keys[pygame.K_e] and any(points_check(x, y, boxes_point)):
+            if keys[pygame.K_e] and any(points_check(x, y, hayeler, wlayer, boxes_point)):
                 user_visible = False
                 lifeTarget = 'walker'
             else:
@@ -102,20 +103,22 @@ class Hidden_box:
 class Key:
     def __init__(self, score):
         if x > 10 and y > 10:
-            self.x = random.randint(10, x - 30)
-            self.y = random.randint(10, y - 30)
+            self.x = random.randint(10, xsc - 30)
+            self.y = random.randint(10, ysc - 30)
+            self.h = 10
+            self.w = 10
             self.score = score
             self.color = random.choice(keys_color)
             keys_color.pop(keys_color.index(self.color))
 
     def draw(self):
-        if x <= self.x <= x + 40 and \
-                y <= self.y <= y + 67:
+        if sum(points_check(self.x, self.y, self.h, self.w, [(x, y, x + wlayer, y + hayeler)])):
             self.score += 1
             py.time.delay(10)
             self.x = self.y = xsc + ysc
             print('bottle')
-        screen.blit(bottle_png, (self.x, self.y))
+        # screen.blit(bottle_png, (self.x, self.y))
+        py.draw.circle(screen, self.color[1], (self.x, self.y), 10, 0)
 
 
 def exist():
@@ -176,6 +179,8 @@ class Mob:
     def __init__(self, x_pik, y_pik, speed_up, target, side_up, side_down, side_crash):
         self.x = x_pik
         self.y = y_pik
+        self.h = 10
+        self.w = 10
         self.y_speed = speed_up
         self.x_speed = speed_up
         self.target = target
@@ -196,7 +201,7 @@ class Mob:
         x_ghost, y_ghost = self.x, self.y
         if self.target == 'monster':
             self.targetx, self.targety = x, y
-            if sum(points_check(self.x, self.y, [(x, y, x + wlayer, y + hayeler)])) and user_visible:
+            if sum(points_check(self.x, self.y, self.h, self.w, [(x, y, x + wlayer, y + hayeler)])) and user_visible:
                 exit()  # scrimer on another die animation 'dr1'
         if self.targetx - 5 <= self.x <= self.targetx + 5 and \
                 self.targety - 5 <= self.y <= self.targety + 5 and self.target == 'walker':
@@ -269,25 +274,25 @@ def start_screen():
             pygame.mixer.music.play(1)
 
 
-def points_check(x_now, y_now, df_point):
+def points_check(x_now, y_now, h_now, w_now, df_point):
     side = [False, False, False, False]  # AB BC CD DA
     if df_point:
         for point in df_point:
             if point[0] < x_now < point[2] + 5:
-                if point[1] < y_now < point[3] or point[1] < y_now + hayeler < point[3] or\
-                   point[1] < y_now + hayeler // 2 < point[3] or point[1] < y_now + hayeler < point[3]:
+                if point[1] < y_now < point[3] or point[1] < y_now + h_now < point[3] or\
+                   point[1] < y_now + h_now // 2 < point[3] or point[1] < y_now + h_now < point[3]:
                     side[0] = True
             if point[1] < y_now < point[3] + 5:
-                if point[0] < x_now < point[2] or point[0] < x_now + wlayer < point[2] or\
-                   point[0] < x_now + wlayer // 2 < point[2] or point[0] < x_now + wlayer < point[2]:
+                if point[0] < x_now < point[2] or point[0] < x_now + w_now < point[2] or\
+                   point[0] < x_now + w_now // 2 < point[2] or point[0] < x_now + w_now < point[2]:
                     side[3] = True
-            if point[1] - 5 < y_now + hayeler < point[3]:
-                if point[0] < x_now < point[2] or point[0] < x_now + wlayer < point[2] or\
-                   point[0] < x_now + wlayer // 2 < point[2] or point[0] < x_now + wlayer < point[2]:
+            if point[1] - 5 < y_now + h_now < point[3]:
+                if point[0] < x_now < point[2] or point[0] < x_now + w_now < point[2] or\
+                   point[0] < x_now + w_now // 2 < point[2] or point[0] < x_now + w_now < point[2]:
                     side[2] = True
-            if point[0] - 5 < x_now + wlayer < point[2] + 5:
-                if point[1] < y_now < point[3] or point[1] < y_now + hayeler < point[3] or\
-                   point[1] < y_now + hayeler // 2 < point[3] or point[1] < y_now + hayeler < point[3]:
+            if point[0] - 5 < x_now + w_now < point[2] + 5:
+                if point[1] < y_now < point[3] or point[1] < y_now + h_now < point[3] or\
+                   point[1] < y_now + h_now // 2 < point[3] or point[1] < y_now + h_now < point[3]:
                     side[1] = True
         return side
     else:
@@ -348,9 +353,10 @@ radio_box = Sound((x // 2, y // 2), (x // 2 + 30, y // 2 + 30))
 py.mouse.set_visible(True)
 pygame.mixer.music.load("sounds/choice.mp3")
 pause = Pause()
+cp = [Key(0), Key(1), Key(2), Key(3), Key(4)]
 # clock = py.time.Clock()
 while True:
-    stsc = True
+    '''stsc = True
     while stsc:
         for i in pygame.event.get():
             if i.type == pygame.QUIT:
@@ -365,7 +371,7 @@ while True:
     py.mixer.music.play(-1)
     py.time.delay(5000)
     py.mixer.music.load('sounds/kaplya.mp3')
-    py.mixer.music.play(-1)
+    py.mixer.music.play(-1)'''
     speed = 3
     tick = 0
     py.mixer.music.load('sounds/shum.mp3')
@@ -389,15 +395,15 @@ while True:
             user = state
         else:
             if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and x > 10 and \
-                    not points_check(x, y, walls_point)[0]:
+                    not points_check(x, y, hayeler, wlayer, walls_point)[0]:
                 x -= speed
             elif (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and x < xsc - 10 - wlayer and \
-                    not points_check(x, y, walls_point)[1]:
+                    not points_check(x, y, hayeler, wlayer, walls_point)[1]:
                 x += speed
-            if (keys[pygame.K_UP] or keys[pygame.K_w]) and y > 10 and not points_check(x, y, walls_point)[3]:
+            if (keys[pygame.K_UP] or keys[pygame.K_w]) and y > 10 and not points_check(x, y, hayeler, wlayer, walls_point)[3]:
                 y -= speed
             elif (keys[pygame.K_DOWN] or keys[pygame.K_s]) and y < ysc - 10 - hayeler and \
-                    not points_check(x, y, walls_point)[2]:
+                    not points_check(x, y, hayeler, wlayer, walls_point)[2]:
                 y += speed
         if keys[pygame.K_ESCAPE]:
             break
@@ -421,9 +427,10 @@ while True:
             screen.blit(user, (x, y))
         [wall.draw() for wall in walls_array]
         radio_box.listen()
+        [i.draw() for i in cp]
         # screen.blit(fogs, (-x, -y))
         # screen.blit(darkness, (-xsc + x + 20, -ysc + y + 43))
         if debugPoint % 2 == 0:
-            debugInfo(str(x) + str(y) + str(points_check(x, y, walls_point)))
+            debugInfo(str(x) + str(y) + str(points_check(x, y, hayeler, wlayer, walls_point)))
         pygame.display.update()
         clock.tick(30)
