@@ -29,7 +29,6 @@ lifeTarget = 'monster'
 death_const = False
 keys_color = [['red', (255, 0, 0)], ['green', (0, 255, 0)], ['yellow', (255, 255, 0)],
               ['blue', (0, 0, 255)], ['fantom', (0, 255, 255)]]
-file = open('source/level_1.lvl', mode='r')
 st_sc = pygame.image.load('image/fogs.png')
 st_sc = pygame.transform.scale(st_sc, (xsc, ysc))
 blop = pygame.transform.scale(pygame.image.load('image/menu.png'), (gran, xsc))
@@ -40,6 +39,10 @@ xlogo = 0
 wlayer, hayeler = 40, 67
 users_puls = 72
 stsc = True
+mainFile = open('source/main_info_log.shz124xcz5630afg17key47', mode='r')
+level = int(mainFile.readline())
+writeInMainFile = open('source/main_info_log.shz124xcz5630afg17key47', mode='w')
+file = open(f'source/level_{level}.lvl', mode='r') if level in [1, 2] else open('source/level_1.lvl', mode='r')
 bottle_png = py.transform.scale(py.image.load('image/bottle.png'), (11, 11 * 3))
 pls_use_hd = py.image.load('image/please.jpg')
 pls_use_hd = py.transform.scale(pls_use_hd, (wpls, wpls // 1.7))
@@ -370,6 +373,7 @@ def import_somefile():
 
 
 def endGame(situation):
+    global level
     py.mixer.music.load('sounds/j73pk48r2.mp3')
     py.mixer.music.play(-1)
     endImage = None
@@ -377,6 +381,8 @@ def endGame(situation):
         endImage = py.image.load('image/pack 1/gameOver.png')
     if situation == 'end':
         endImage = py.image.load('image/pack 1/level1.png')
+        level += 1
+    writeInMainFile.write(str(level))
     endImage = py.transform.scale(endImage, (600, 400))
     for i in range(255):
         for fect in pygame.event.get():
