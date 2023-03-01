@@ -7,8 +7,8 @@ pygame.init()
 screen = pygame.display.set_mode()
 global_time = (0, 0)
 xsc, ysc = screen.get_size()
-x = 160
-y = 190
+x = 15
+y = 15
 x_ghost, y_ghost = xsc, ysc
 q_last, w_last = x, y
 razmetka_y = ysc // 8
@@ -22,13 +22,14 @@ walls_point = list()
 boxes_point = list()
 walls_array = list()
 keys_point = list()
+totalKey = 0
 debugText = ''
 debugPoint = 1
 lifeTarget = 'monster'
 death_const = False
-keys_color = [['red', (255, 0, 0)], ['green', (0, 255, 0)], ['yellow', (255, 255, 0)], ['blue', (0, 0, 255)], ['fantom', (0, 255, 255)]]
+keys_color = [['red', (255, 0, 0)], ['green', (0, 255, 0)], ['yellow', (255, 255, 0)],
+              ['blue', (0, 0, 255)], ['fantom', (0, 255, 255)]]
 file = open('source/level_1.lvl', mode='r')
-
 st_sc = pygame.image.load('image/fogs.png')
 st_sc = pygame.transform.scale(st_sc, (xsc, ysc))
 blop = pygame.transform.scale(pygame.image.load('image/menu.png'), (gran, xsc))
@@ -53,11 +54,14 @@ down = py.transform.scale(py.image.load('image/down.png'), (wlayer, hayeler))
 univer = py.transform.scale(py.image.load('image/univer.png'), (wlayer, hayeler))
 lvl2 = py.transform.scale(py.image.load('image/lvl2.png'), (xsc, ysc))
 box = py.transform.scale(py.image.load('image/box.png'), (70, 70))
+floor = py.transform.scale(py.image.load('image/floor.jpg'), (xsc, ysc))
 chastota_bienie = 1
 user = state
 user_visible = True
+yarik = None
+crashFlag = False
+portalConst = False
 pygame.mouse.set_visible(False)
-'''
 for i in range(255):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -77,7 +81,6 @@ for i in range(xscr // 2 - 50):
     screen.blit(logo_rote, (xlogo, yscr // 2 - 50))
     py.display.update()
 pygame.time.delay(2000)
-'''
 
 
 class Hidden_box:
@@ -112,8 +115,10 @@ class Key:
             keys_color.pop(keys_color.index(self.color))
 
     def draw(self):
+        global totalKey
         if sum(points_check(self.x, self.y, self.h, self.w, [(x, y, x + wlayer, y + hayeler)])):
             self.score += 1
+            totalKey += 1
             py.time.delay(10)
             self.x = self.y = xsc + ysc
             print('bottle')
@@ -159,7 +164,7 @@ class Pause:
         self.x_window = (x // 2) - 100
         self.y_window = -100
 
-    def open(self, key):
+    def open(self):
         while True:
             if pygame.key.get_pressed()[pygame.K_ESCAPE]:
                 break
@@ -194,15 +199,16 @@ class Mob:
         self.frst = self.side_stay
         self.tws = self.side_move
         self.character = self.tws
+        self.yarik = side_up
 
-    def live(self, target):
+    def live(self):
         global x, y, x_ghost, y_ghost, lifeTarget
         self.target = lifeTarget
         x_ghost, y_ghost = self.x, self.y
         if self.target == 'monster':
             self.targetx, self.targety = x, y
             if sum(points_check(self.x, self.y, self.h, self.w, [(x, y, x + wlayer, y + hayeler)])) and user_visible:
-                exit()  # scrimer on another die animation 'dr1'
+                endGame('gameOver')
         if self.targetx - 5 <= self.x <= self.targetx + 5 and \
                 self.targety - 5 <= self.y <= self.targety + 5 and self.target == 'walker':
             if self.flag:
@@ -221,13 +227,15 @@ class Mob:
             self.y_speed = 1
         else:
             self.y_speed = -1
-        if self.targetx > self.x:
-            self.x_speed = 1
+        if self.targetx < self.x:
+            self.x_speed = -1
             self.frst = py.transform.flip(self.side_stay, True, False)
             self.tws = py.transform.flip(self.side_move, True, False)
-        elif self.targetx < self.x:
-            self.x_speed = -1
+        elif self.targetx > self.x:
+            self.x_speed = 1
             self.frst, self.tws = self.side_move, self.side_stay
+        if portalConst:
+            self.character = self.gluk
         self.x += self.x_speed
         self.y += self.y_speed
         screen.blit(self.character, (self.x, self.y))
@@ -246,7 +254,7 @@ def start_screen():
     pygame.draw.rect(screen, color_rect, (dfig - yg // 2, yg * 4.5, yg, yg), width)
     pygame.draw.rect(screen, color_rect, (dfig - yg // 2 + 15, yg * 4.5 + 15, yg, yg), width)
     pygame.draw.line(screen, color_rect, (dfig - yg // 2, yg * 4.5), (dfig * 1.5 + 4 + 15, yg * 5.5 + 15), 4)
-    pygame.draw.line(screen, (0, 255, 0), (dfig - yg // 2, yg * 5.5), (dfig * 1.5 + 4, yg * 4.5), 4)
+    # pygame.draw.line(screen, (0, 255, 0), (dfig - yg // 2, yg * 5.5), (dfig * 1.5 + 4, yg * 4.5), 4)
     # settings button
     pygame.draw.rect(screen, collor_circle, (dfig - yg // 2, (ysc // 2) - 15, yg, 30), width)
     pygame.draw.rect(screen, collor_circle, (gran // 2 - 15, yg * 2.5, 30, yg), width)
@@ -334,7 +342,23 @@ class Sound:
         py.mixer.music.set_volume(self.volume)
         self.center = (self.x_start, self.y_start)
         self.distance = int(((self.center[0] - x) ** 2 + (self.center[1] - y) ** 2) ** 0.5)
-        py.draw.rect(screen, self.clr, (self.x_start, self.y_start, self.width, self.height), 0)
+
+
+class unkSubstat:
+    def __init__(self, a):
+        py.mixer.music.load('sounds/af6738ba210e593.mp3')
+        py.mixer.music.play(-1)
+        self.a = a
+        self.x = ri(0, xsc)
+        self.y = ri(0, ysc)
+        self.h = hayeler * 2
+        self.w = wlayer * 2
+        self.portal = py.transform.scale(py.image.load('image/pack 1/portal.png'), (self.w, self.h))
+
+    def luks(self):
+        screen.blit(self.portal, (self.x, self.y))
+        if sum(points_check(self.x, self.y, self.h, self.w, [(x, y, x + wlayer, y + hayeler)])):
+            endGame('end')
 
 
 def import_somefile():
@@ -345,18 +369,46 @@ def import_somefile():
         walls_array.append(Wall((int(eval(sp[0])), int(eval(sp[1]))), (int(eval(sp[2])), int(eval(sp[3]))), sp[4]))
 
 
-ghost_yarik = Mob(x_ghost, y_ghost, 1, 'monster', 'image/pack 1/rl_ran.png', 'image/pack 1/rl_sty.png',
-                  'image/pack 1/rl_sty.png')
+def endGame(situation):
+    py.mixer.music.load('sounds/j73pk48r2.mp3')
+    py.mixer.music.play(-1)
+    endImage = None
+    if situation == 'gameOver':
+        endImage = py.image.load('image/pack 1/gameOver.png')
+    if situation == 'end':
+        endImage = py.image.load('image/pack 1/level1.png')
+    endImage = py.transform.scale(endImage, (600, 400))
+    for i in range(255):
+        for fect in pygame.event.get():
+            if fect.type == pygame.QUIT:
+                exit()
+        endImage.set_alpha(i)
+        pygame.time.delay(50)
+        screen.blit(endImage, (xscr // 2 - wpls // 2, yscr // 2 - 150))
+        py.display.update()
+    while True:
+        for fect in pygame.event.get():
+            if fect.type == pygame.QUIT:
+                exit()
+        exit() if py.mouse.get_pressed()[0] else None
+
+
+ghost_yarik = Mob(x_ghost, y_ghost, 1, 'monster', 'image/pack 1/yarik_down.png', 'image/pack 1/yarik_up.png',
+                  'image/pack 1/yarik_d1.png')
 yarik_voice = Sound((x // 2, y // 2), (x // 2 + 30, y // 2 + 30))
 box_for_hide_1 = Hidden_box((xsc // 4, ysc // 4))
+box_for_hide_2 = Hidden_box((xsc // 5 * 3, ysc // 4 * 3 + wlayer * 1.1))
+box_for_hide_3 = Hidden_box((x // 7 * 6,  ysc // 4 * 3 + wlayer * 1.1))
+box_for_hide_4 = Hidden_box((x // 7 * 6,  ysc // 8))
 radio_box = Sound((x // 2, y // 2), (x // 2 + 30, y // 2 + 30))
+hole = unkSubstat(1)
 py.mouse.set_visible(True)
 pygame.mixer.music.load("sounds/choice.mp3")
 pause = Pause()
 cp = [Key(0), Key(1), Key(2), Key(3), Key(4)]
 # clock = py.time.Clock()
 while True:
-    '''stsc = True
+    stsc = True
     while stsc:
         for i in pygame.event.get():
             if i.type == pygame.QUIT:
@@ -371,10 +423,10 @@ while True:
     py.mixer.music.play(-1)
     py.time.delay(5000)
     py.mixer.music.load('sounds/kaplya.mp3')
-    py.mixer.music.play(-1)'''
+    py.mixer.music.play(-1)
     speed = 3
     tick = 0
-    py.mixer.music.load('sounds/shum.mp3')
+    py.mixer.music.load('sounds/yarik.mp3')
     py.mixer.music.play(-1)
     import_somefile()
     while True:
@@ -400,7 +452,8 @@ while True:
             elif (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and x < xsc - 10 - wlayer and \
                     not points_check(x, y, hayeler, wlayer, walls_point)[1]:
                 x += speed
-            if (keys[pygame.K_UP] or keys[pygame.K_w]) and y > 10 and not points_check(x, y, hayeler, wlayer, walls_point)[3]:
+            if (keys[pygame.K_UP] or keys[pygame.K_w]) and y > 10 and\
+                    not points_check(x, y, hayeler, wlayer, walls_point)[3]:
                 y -= speed
             elif (keys[pygame.K_DOWN] or keys[pygame.K_s]) and y < ysc - 10 - hayeler and \
                     not points_check(x, y, hayeler, wlayer, walls_point)[2]:
@@ -414,22 +467,30 @@ while True:
             speed = 35
             chastota_bienie = 0
         elif keys[pygame.K_SPACE]:
-            pause.open(keys)
+            pause.open()
         elif keys[ord('`')]:
             debugPoint += 1
             py.time.delay(400)
         else:
             speed = 3
-
-        ghost_yarik.live('monster')
+        if portalConst:
+            py.mixer.music.set_volume(1)
+            screen.blit(floor, (0, 0))
+            user = univer
+        ghost_yarik.live()
+        yarik_voice.listen(True, (x_ghost, y_ghost))
         box_for_hide_1.draw()
+        box_for_hide_2.draw()
+        box_for_hide_3.draw()
+        box_for_hide_4.draw()
         if user_visible:
             screen.blit(user, (x, y))
         [wall.draw() for wall in walls_array]
-        radio_box.listen()
         [i.draw() for i in cp]
-        # screen.blit(fogs, (-x, -y))
-        # screen.blit(darkness, (-xsc + x + 20, -ysc + y + 43))
+        if totalKey == 5:
+            hole.luks()
+            portalConst = True
+        screen.blit(darkness, (-xsc + x + 20, -ysc + y + 43))
         if debugPoint % 2 == 0:
             debugInfo(str(x) + str(y) + str(points_check(x, y, hayeler, wlayer, walls_point)))
         pygame.display.update()

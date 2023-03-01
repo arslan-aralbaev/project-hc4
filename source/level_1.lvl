@@ -1,1 +1,5 @@
-xsc//6 ysc//5*1.5 xsc//2 ysc//5*1.5+ysc//20 white
+xsc//8 0 xsc//8+wlayer*1.1 ysc//4*3 yellow
+xsc//8 ysc//4*3 xsc//5*3 ysc//4*3+wlayer*1.1 yellow
+xsc//4*3+wlayer*1.4 ysc//4*3 xsc ysc//4*3+wlayer*1.1 yellow
+xsc//4+wlayer*1.4 ysc//5 xsc//4*3+wlayer*1.4 ysc//5+wlayer*1.1 yellow
+xsc//4*3+wlayer*1.4 ysc//5 xsc//4*3+wlayer*2.4 ysc//4*3+wlayer*1.1 yellow
